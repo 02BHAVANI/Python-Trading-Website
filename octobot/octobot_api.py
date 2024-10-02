@@ -96,3 +96,7 @@ class OctoBotAPI:
 
     def update_bot(self) -> None:
         commands.update_bot(self)
+        
+    
+    async def get_available_cryptocurrencies(self):
+        return await self._octobot.exchange_producer.get_available_cryptocurrencies()

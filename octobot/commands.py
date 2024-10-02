@@ -18,9 +18,12 @@ import os
 import typing
 
 import sys
+
 import asyncio
 import signal
 import threading
+
+import logging
 
 import octobot_commons.configuration as configuration
 import octobot_commons.profiles as profiles
@@ -37,6 +40,8 @@ import octobot.logger as octobot_logger
 import octobot.constants as constants
 import octobot.community.tentacles_packages as community_tentacles_packages
 import octobot.configuration_manager as configuration_manager
+
+from flask import render_template,Flask,jsonify
 
 COMMANDS_LOGGER_NAME = "Commands"
 IGNORED_COMMAND_WHEN_RESTART = ["-u", "--update"]
@@ -317,3 +322,71 @@ def restart_bot():
 def update_bot(bot_api):
     import octobot.updater.updater_factory as updater_factory
     bot_api.run_in_async_executor(updater_factory.create_updater().update())
+
+
+async def get_available_cryptocurrencies(api):
+    """
+    Retrieves available cryptocurrencies from the API.
+    """
+    try:
+        available_cryptos = await api.get_available_cryptocurrencies()
+        logging.info(f"Available cryptocurrencies: {available_cryptos}")
+        return available_cryptos
+    except Exception as e:
+        logging.error(f"Error fetching available cryptocurrencies: {e}")
+        return []
+
+async def handle_command(api, command):
+    """
+    Handles commands sent to the bot.
+    """
+    if command == "check_available_cryptos":
+        available_cryptos = await get_available_cryptocurrencies(api)
+        print(available_cryptos)
+
+async def main():
+    """
+    Main function to run the bot and handle commands.
+    """
+    # Initialize your API instance here
+    api = None  # Replace this with actual initialization of your API instance
+
+    # Example command to check available cryptocurrencies
+    await handle_command(api, "check_available_cryptos")
+
+# To run the main function, you need an event loop
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
+    
+
+async def handle_command(api, command, *args):
+    try:
+        if command == "connect_wallet":
+            if not args:
+                print("Error: Wallet address is required.")
+                return
+            wallet_address = args[0]
+            result = await api.connect_wallet(wallet_address)
+            if result['success']:
+                print(f"Connected to wallet. Balance: {result['balance']} ETH")
+            else:
+                print(f"Error: {result['error']}")
+
+        elif command == "check_available_cryptos":
+            available_cryptos = await api.get_available_cryptocurrencies()
+            print("Available Cryptocurrencies:", available_cryptos)
+            
+        else:
+            print(f"Unknown command: {command}")
+
+    except Exception as e:
+        print(f"An error occurred while handling command '{command}': {e}")
+
+
+
+def wallet_connect_command(ctx):
+    
+    ctx.send(render_template('wallet_connect.html'))  
+

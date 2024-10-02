@@ -33,6 +33,7 @@ import octobot_services.api as service_api
 import octobot_trading.api as trading_api
 
 import octobot.logger as logger
+#from . import logger
 import octobot.community as community
 import octobot.constants as constants
 import octobot.configuration_manager as configuration_manager
@@ -44,6 +45,29 @@ import octobot.producers as producers
 import octobot.storage as storage
 import octobot.automation as automation
 
+import sys
+import os
+
+# Add the parent directory of this script to the sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from flask import Flask, request, jsonify
+from octobot.producers.exchange_producer import get_crypto_balance
+
+app = Flask(__name__)
+
+@app.route('/api/balance', methods=['POST'])
+def get_balance():
+    data = request.json
+    user_address = data.get("address")
+    balance = get_crypto_balance(user_address)  # Call the balance function
+    return jsonify({"address": user_address, "balance": balance})
+
+if __name__ == "__main__":
+    app.run(debug=True)  # Start the Flask app
+  
+  
+    
 """Main OctoBot class:
 - Create all indicators and thread for each cryptocurrencies in config """
 

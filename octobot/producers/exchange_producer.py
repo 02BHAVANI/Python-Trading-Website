@@ -15,6 +15,9 @@
 #  License along with OctoBot. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 
+from web3 import Web3
+import requests
+
 import octobot_commons.enums as common_enums
 import octobot_commons.constants as common_constants
 
@@ -22,6 +25,14 @@ import octobot_trading.api as trading_api
 import octobot_trading.octobot_channel_consumer as trading_channel_consumer
 
 import octobot.channels as octobot_channel
+
+
+def get_crypto_balance(user_address):
+            
+        return {
+            "ETH": 10.5,  # Example value
+            "USDT": 200.0  # Example value
+        }
 
 
 class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
@@ -35,6 +46,29 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
 
         self.to_create_exchanges_count = 0
         self.created_all_exchanges = asyncio.Event()
+        
+        self.web3 = None
+        
+    async def connect_wallet(self, wallet_address):
+        try:
+            self.web3 = Web3(Web3.HTTPProvider('<YOUR_INFURA_OR_ALCHEMY_URL>'))
+            if self.web3.isConnected():
+                balance = await self.get_wallet_balance(wallet_address)
+                return {"success": True, "balance": balance}
+            else:
+                return {"success": False, "error": "Could not connect to wallet."}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+        
+    async def get_wallet_balance(self, wallet_address):
+        balance = await self.web3.eth.get_balance(wallet_address)
+        return self.web3.fromWei(balance, 'ether')
+    
+    async def get_available_cryptocurrencies(self):
+        # Logic to connect to the exchange and retrieve available cryptocurrencies
+        available_cryptos = await self.exchange_api.fetch_available_cryptocurrencies()
+        return available_cryptos
+    
 
     async def start(self):
         self.to_create_exchanges_count = 0
@@ -69,3 +103,23 @@ class ExchangeProducer(octobot_channel.OctoBotChannelProducer):
                                 self.octobot.config,
                             trading_channel_consumer.OctoBotChannelTradingDataKeys.EXCHANGE_NAME.value: exchange_name,
                         })
+
+
+
+class WalletConnector:
+    def __init__(self, rpc_url):
+        self.web3 = Web3(Web3.HTTPProvider(rpc_url))
+
+    def is_connected(self):
+        return self.web3.isConnected()
+
+    def get_wallet_balance(self, wallet_address):
+        try:
+            balance = self.web3.eth.get_balance(wallet_address)
+            return self.web3.fromWei(balance, 'ether')
+        except Exception as e:
+            return {"error": str(e)}
+
+    def get_supported_cryptocurrencies(self):
+        # Hardcoded example, this can be modified as per the actual exchange API you integrate.
+        return {"ETH": "Ethereum", "USDT": "Tether"}

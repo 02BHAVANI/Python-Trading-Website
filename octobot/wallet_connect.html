@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Wallet</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.5.2.umd.min.js"></script>
+</head>
+<body>
+    <h1>Connect Your Wallet</h1>
+    <button id="connectButton">Connect to MetaMask</button>
+    <div id="balance"></div>
+
+    <script>
+        const connectButton = document.getElementById("connectButton");
+        const balanceDiv = document.getElementById("balance");
+
+        connectButton.onclick = async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const userAddress = accounts[0];
+                    console.log(`Connected to: ${userAddress}`);
+
+                    // Call your Python backend to get the balance
+                    const response = await fetch('/api/balance', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ address: userAddress })
+                    });
+
+                    const data = await response.json();
+                    balanceDiv.innerHTML = `Balance: ${JSON.stringify(data.balance)}`;
+                } catch (error) {
+                    console.error("User denied account access or there was an error:", error);
+                }
+            } else {
+                console.error("MetaMask is not installed!");
+            }
+        };
+    </script>
+</body>
+</html>
